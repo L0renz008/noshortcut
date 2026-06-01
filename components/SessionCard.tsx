@@ -9,7 +9,7 @@ export default function SessionCard({ session }: SessionCardProps) {
   if (!session)
     return (
       <div className="border border-border rounded-2xl p-5 text-muted-foreground text-sm">
-        Rien de planifié aujourd'hui
+        Rien de planifié aujourd&apos;hui
       </div>
     );
 
