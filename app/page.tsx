@@ -1,7 +1,4 @@
-import Header from "@/components/Header";
 import HomeClient from "@/components/HomeClient";
-import SessionCard from "@/components/SessionCard";
-import WeekStrip from "@/components/WeekStrip";
 import { supabase } from "@/lib/supabase";
 import { Session } from "@/types";
 
@@ -18,24 +15,18 @@ export default async function Home() {
   const mondayStr = toISODate(monday);
   const sundayStr = toISODate(sunday);
 
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from("sessions")
     .select(`id, date, week_number, blocs (type)`)
     .gte("date", mondayStr)
     .lte("date", sundayStr);
-  const sessions = data as Session[] | null;
-
-  const sessionsDates = sessions?.map((s) => s.date) ?? [];
+  const sessions = (data ?? []) as Session[];
 
   const todayStr = toISODate(today);
-  const todaySession = sessions?.find((session) => session.date === todayStr);
 
   return (
     <div className="p-4">
       <HomeClient sessions={sessions} todayStr={todayStr} />
-      {/* <Header />
-      <WeekStrip today={today} sessionDates={sessionsDates} />
-      <SessionCard session={todaySession} /> */}
     </div>
   );
 }
