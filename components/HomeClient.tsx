@@ -19,7 +19,7 @@ export default function HomeClient({ sessions, todayStr }: HomeClientProps) {
   const sessionDates = sessions.map((s) => s.date);
 
   return (
-    <div className="p-4">
+    <div className="">
       <Header />
       <WeekStrip
         today={today}
