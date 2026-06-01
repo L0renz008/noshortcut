@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Session } from "@/types";
 import Header from "./Header";
 import WeekStrip from "./WeekStrip";
