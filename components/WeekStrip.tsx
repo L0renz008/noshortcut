@@ -45,7 +45,7 @@ export default function WeekStrip({
           const isSelected = dateStr === selectedDate;
 
           return (
-            <button
+            <div
               key={index}
               className={`flex flex-col items-center gap-1 touch-manipulation`}
               onClick={() => onDaySelect(dateStr)}
@@ -62,7 +62,7 @@ export default function WeekStrip({
               <span
                 className={`rounded-full h-1 w-1 ${hasSession ? "bg-foreground" : "bg-transparent"}`}
               ></span>
-            </button>
+            </div>
           );
         })}
       </div>
