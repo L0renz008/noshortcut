@@ -22,7 +22,7 @@ export default function SessionCard({ session }: SessionCardProps) {
 
   return (
     <Link
-      href={`/session/${session.id}`}
+      href={`/sessions/${session.id}`}
       className="bg-foreground rounded-2xl p-6 flex flex-col gap-4"
     >
       <p className="text-sm text-neutral-400">
