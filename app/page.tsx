@@ -15,11 +15,12 @@ export default async function Home() {
   const mondayStr = toISODate(monday);
   const sundayStr = toISODate(sunday);
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("sessions")
     .select(`id, date, week_number, blocs (type)`)
     .gte("date", mondayStr)
     .lte("date", sundayStr);
+  if (error) console.error("Error fetching sessions:", error);
   const sessions = (data ?? []) as Session[];
 
   const todayStr = toISODate(today);
