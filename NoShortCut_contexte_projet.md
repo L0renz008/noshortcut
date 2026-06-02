@@ -8,7 +8,7 @@ Deux modes prévus : **athlète** (consultation séances + records) / **coach** 
 ---
 
 ## Stack technique
-- **Framework** : Next.js 15 (App Router)
+- **Framework** : Next.js 16 (App Router)
 - **Langage** : TypeScript
 - **Style** : Tailwind CSS + Shadcn/ui (thème Luma)
 - **Base de données** : Supabase (PostgreSQL + Auth)
@@ -96,7 +96,11 @@ records(
 
 **Permissions actuelles (temporaires)** : GRANT SELECT + policy `USING(true)` sur `users`, `sessions`, `blocs`. À restreindre après auth.
 
-**Données de test** : 6 users + 4 sessions semaine 22 (26-29 mai 2026, week_number: 3) + blocs associés.
+**Données de test** :
+- 6 users historiques.
+- Sessions semaine 3 : 26-29 mai 2026 (`week_number: 3`).
+- Sessions semaine 4 : 1, 2, 4 et 5 juin 2026 (`week_number: 4`).
+- Session du 1 juin 2026 peuplée avec 5 blocs de test : Warm up, Haltéro, Force, Conditionning, Accessory.
 
 ---
 
@@ -163,11 +167,10 @@ Geist, `max-w-md mx-auto`, `pb-20`, BottomNav inclus.
 ### `components/BottomNav.tsx`
 ```
 "use client"
-usePathname + useRouter depuis next/navigation
+usePathname depuis next/navigation
 Tabs : [Séances /, Records /records, Profil /profil]
 Actif = pathname === href
-onClick sur chaque tab : if (pathname === tab.href) router.push(tab.href)
-  → force remontage du composant et reset useState
+Navigation via <Link>
 ```
 
 ### `components/Header.tsx`
@@ -216,13 +219,22 @@ Passe sessions[] + todayStr à HomeClient
 ```
 
 ### `app/sessions/[id]/page.tsx`
-Route dynamique créée. Récupère l'id via :
+Route dynamique commencée. Récupère l'id via :
 ```typescript
-export default async function SessionPage({ params }: { params: { id: string } }) {
+export default async function SessionPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  // fetch à venir
+  // fetch session + blocs
 }
 ```
+État actuel :
+- Fetch Supabase sur `sessions` filtré par `.eq("id", id).single()`.
+- Select de la session + blocs liés : `id, date, week_number, blocs (id,title,type,format,instructions,order_index)`.
+- Gestion basique `error || !data` → "Séance introuvable".
+- Bouton retour vers `/` avec `IconChevronLeft`.
+- Date formatée en français (`1 juin 2026`).
+- Affichage `Semaine X · N blocs`.
+- Début de design des cartes de blocs : fond page `#F6F5F1`, cartes blanches avec bordure `#E8E8E4`, bandeau coloré selon type.
+- Constante `BLOC_TYPE_COLORS` déclarée hors composant.
 
 ---
 
@@ -293,13 +305,14 @@ Navigation bloc par bloc avec :
 7. `bloc_versions` pour gérer les versions par catégorie (Elite/RX/Inter/Scaled) des blocs Conditioning
 8. `format` dans blocs pour typer les WODs ('For time', 'AMRAP', 'EMOM', 'Tabata')
 9. Couleurs par type de bloc définies et figées (voir tableau ci-dessus)
+10. En développement mobile local, ajouter l'IP réseau du Mac dans `next.config.ts` via `allowedDevOrigins`, sinon Next peut bloquer les ressources dev et l'app s'affiche sans interactivité côté mobile.
 
 ---
 
 ## Tâches — Ordre de priorité
 
-1. **Coder `/sessions/[id]`** (aperçu) — design validé ✓
-2. **Peupler la BDD** avec de vraies séances
+1. **Terminer `/sessions/[id]`** (aperçu) — en cours : header OK, cartes colorées commencées
+2. **Améliorer les données de test** pour couvrir plusieurs séances complètes
 3. **Coder `/sessions/[id]/live`** — mode séance bloc par bloc
 4. **Supabase Auth** — connexion athlètes + coach
 5. **Policies RLS** par utilisateur
@@ -314,7 +327,7 @@ Navigation bloc par bloc avec :
 Niveau : débutant/intermédiaire — Mac Apple Silicon, VS Code, Git + terminal.
 
 ### Concepts maîtrisés
-Props, déstructuration, `export default`, `"use client"`, Server vs Client Components, sérialisation JSON Server→Client, `useState` (théorie + pratique), `useEffect`, `usePathname`, `useRouter`, `router.push()`, `.map()/.find()/.includes()`, ternaire, `??`, types TS (`type`, cast `as`, `|undefined`, union types), algorithme calcul lundi semaine, manipulation Date JS, jointures + filtres Supabase, GRANT + RLS, `next/font`, routes dynamiques `[id]`, `params` dans Server Components, passage de fonctions en props (`onDaySelect: (date:string)=>void`), `Link` vs `router.push`.
+Props, déstructuration, `export default`, `"use client"`, Server vs Client Components, sérialisation JSON Server→Client, `useState` (théorie + pratique), `useEffect`, `usePathname`, `useRouter`, `router.push()`, `.map()/.find()/.includes()`, `.length`, ternaire, `??`, types TS (`type`, cast `as`, `|undefined`, union types, `Record<string,string>`), algorithme calcul lundi semaine, manipulation Date JS, jointures + filtres Supabase (`.eq()`, `.single()`), GRANT + RLS, `next/font`, routes dynamiques `[id]`, `params` dans Server Components, passage de fonctions en props (`onDaySelect: (date:string)=>void`), `Link` vs `router.push`, styles inline pour couleurs dynamiques.
 
 ### Pas encore enseigné
 `useParams`, `useSearchParams`, Supabase Auth, RLS avancée, gestion formulaires, optimistic updates, `localStorage`, `useContext`, déploiement Vercel.
