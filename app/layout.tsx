@@ -17,11 +17,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr">
-      <body className={`${geist.className} bg-background text-foreground`}>
+      <body className={`${geist.className} bg-[#F6F5F1] text-foreground`}>
         <div className="flex flex-col min-h-screen max-w-md mx-auto relative">
-          <main className="flex-1 pb-20">
-            {children}
-          </main>
+          <main className="flex-1 pb-20 bg-[#F6F5F1]">{children}</main>
           <BottomNav />
         </div>
       </body>
