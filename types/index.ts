@@ -8,7 +8,7 @@ export type BlocVersion = {
 export type Bloc = {
   id: string;
   title: string;
-  type: string;
+  type: "Warm up" | "Haltéro" | "Force" | "Conditionning" | "Gym" | "Accessory";
   format: "For time" | "AMRAP" | "EMOM" | null;
   instructions: string | null;
   order_index: number;
