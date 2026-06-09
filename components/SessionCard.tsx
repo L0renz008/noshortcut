@@ -5,6 +5,10 @@ type SessionCardProps = {
   session: Session | undefined;
 };
 
+const capitalizeFirstLetter = (str: string) => {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+};
+
 export default function SessionCard({ session }: SessionCardProps) {
   if (!session)
     return (
@@ -20,6 +24,10 @@ export default function SessionCard({ session }: SessionCardProps) {
     .toUpperCase();
   const annee = date.getFullYear();
 
+  const blocTypes = new Set(
+    session.blocs.map((bloc) => capitalizeFirstLetter(bloc.type)),
+  );
+
   return (
     <Link
       href={`/sessions/${session.id}`}
@@ -30,12 +38,12 @@ export default function SessionCard({ session }: SessionCardProps) {
       </p>
       <h2 className="text-2xl font-bold text-background">Séance du jour</h2>
       <div className="flex flex-row flex-wrap gap-2">
-        {session.blocs.map((bloc, index) => (
+        {Array.from(blocTypes).map((type) => (
           <span
-            key={index}
+            key={type}
             className="rounded-full border border-neutral-600 px-3 py-1 text-sm text-neutral-300"
           >
-            {bloc.type}
+            {type}
           </span>
         ))}
       </div>
