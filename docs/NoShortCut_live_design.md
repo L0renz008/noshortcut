@@ -27,6 +27,7 @@
 ## 2. Navigation
 
 ### Dots de progression
+
 - Un dot par bloc dans la séance
 - Dot passé : `background: #999`, taille `7×7px`
 - Dot actif : `background: #111`, taille `16×7px`, `border-radius: 99px` (pill allongée)
@@ -34,6 +35,7 @@
 - Gap entre dots : `6px`
 
 ### Boutons de navigation
+
 ```
 [ ‹ Préc. ]        [ Bloc suivant › ]
 flex: 1            flex: 2
@@ -43,21 +45,25 @@ border: 0.5px solid #E2E1DD   background: #111
 background: white              color: white
 color: #171717
 ```
+
 - Le bouton Précédent est **désactivé** sur le premier bloc
 - Le bouton Suivant devient **"Terminer la séance"** sur le dernier bloc
 
 ### Swipe mobile
+
 - Swipe gauche → bloc suivant
 - Swipe droite → bloc précédent
 
 ### Bouton Quitter
+
 - Position : haut gauche, `✕ Quitter` ou icône `IconX`
 - Style : discret, `font-size: 12px`, `color: #999`
-- Au clic → confirmation : *"Quitter la séance ? Ta progression sera perdue."*
+- Au clic → confirmation : _"Quitter la séance ? Ta progression sera perdue."_
 - Deux boutons : **Annuler** / **Quitter**
-- Si localStorage actif : message alternatif *"Ta progression sera sauvegardée."*
+- Si localStorage actif : message alternatif _"Ta progression sera sauvegardée."_
 
 ### localStorage
+
 - Clé : `live_session_{sessionId}` → index du bloc actuel
 - Clé : `live_pct_{sessionId}_{blocId}_{setId}` → pourcentage modifié
 - À la reprise : proposition de continuer là où on en était
@@ -85,24 +91,27 @@ Chaque bloc est affiché dans une card blanche :
 **Padding body** : `11px`
 
 ### Couleurs par type (inchangées)
-| Type         | Couleur     | Hex       |
-|--------------|-------------|-----------|
-| warm up      | Amber       | `#EF9F27` |
-| haltero      | Blue        | `#378ADD` |
-| force        | Purple      | `#7F77DD` |
-| conditioning | Coral       | `#D85A30` |
-| gym          | Coral       | `#D85A30` |
-| accessory    | Teal        | `#1D9E75` |
+
+| Type         | Couleur | Hex       |
+| ------------ | ------- | --------- |
+| warm up      | Amber   | `#EF9F27` |
+| haltero      | Blue    | `#378ADD` |
+| force        | Purple  | `#7F77DD` |
+| conditioning | Coral   | `#D85A30` |
+| gym          | Coral   | `#D85A30` |
+| accessory    | Teal    | `#1D9E75` |
 
 ---
 
 ## 4. Bloc Force
 
 ### Layout des sets
+
 - **Grille 2 colonnes** : quand les sets ont des charges différentes
 - **Card pleine largeur** : quand plusieurs sets partagent la même fourchette
 
 ### Card set — grille 2 colonnes
+
 ```
 ┌────────────────┐
 │ Set 1          │  ← set-label : 9px, #999
@@ -112,23 +121,28 @@ Chaque bloc est affiché dans une card blanche :
 │ + 2 box jumps  │  ← set-note : 8px, #888, italic (si instruction après set)
 └────────────────┘
 ```
+
 - Background normal : `#F0EFEB`
 - Background modifié : `#EBF3FB` + crayon ✎ sur le pourcentage en `#378ADD`
 
 ### Card set — pleine largeur (fourchette)
+
 ```
 ┌──────────────────────────────────┐
 │ Sets 1–3        52–56 kg         │
 │ 2 reps          65–70%           │
 └──────────────────────────────────┘
 ```
+
 Layout horizontal : infos set à gauche, poids/% à droite.
 
 ### Fourchettes
+
 - Notation avec tiret : `52–56 kg` / `65–70%`
 - Le tiret signifie "au choix dans la fourchette" (≠ flèche qui signifierait progression)
 
 ### Modification de pourcentage
+
 - Clic sur la card → input ou modal pour changer le %
 - Recalcul automatique du poids affiché
 - Indicateur visuel : fond bleu `#EBF3FB` + `✎` après le %
@@ -136,16 +150,20 @@ Layout horizontal : infos set à gauche, poids/% à droite.
 - Modifications stockées en `localStorage` uniquement (pas en BDD)
 
 ### Notes du coach
+
 - Bouton "📋 Voir les notes" → popover/bulle
 - Popover : `background: #FFFDF5`, `border: 0.5px solid #E8E0C0`, `border-radius: 8px`
 
 ### Sous-titre
+
 ```
 [N] sets · Every [X:XX] · PR : [X] kg
 ```
+
 - `font-size: 10px`, `color: #999`
 
 ### Charges indicatives
+
 - Badge centré : `"* Charges indicatives"` en italique, `9px`, `#999`
 
 ---
@@ -155,18 +173,22 @@ Layout horizontal : infos set à gauche, poids/% à droite.
 Même base que Force avec ces différences :
 
 ### Titre de groupe = nom du mouvement
+
 ```
 HIGH HANG POWER SNATCH · 2 REPS        ← mvt-group-title
 ```
+
 - `font-size: 10px`, `font-weight: 700`, `color: #378ADD`
 - `text-transform: uppercase`, `letter-spacing: 0.04em`
 - Séparé par `divider-soft` (`0.5px solid #F0EFEB`) entre chaque mouvement
 
 ### Complexe
+
 - Tag "Complexe — enchaîner sans poser" si `complex_id` identique
 - Reps notées : `3+3 reps`, `2+2 reps`, `1+1 rep`
 
 ### Options (piloté par `option_number` en BDD)
+
 ```
 [Option A — Speed Strength]     ← background: #FFF4E0, color: #C07A00
   Snatch Pull · 2 (1.1)
@@ -178,11 +200,13 @@ HIGH HANG POWER SNATCH · 2 REPS        ← mvt-group-title
 ```
 
 ### Sous-parties a / b / c
+
 - Tag gris neutre : `background: #F0EFEB`, `color: #555`, `font-size: 10px`
 - Chaque sous-partie a son propre timing affiché dans le tag
 - Ex : `a. Activation — 3 sets · Every 1:30`
 
 ### Montée libre (pas de sets définis)
+
 - "Free card" en pointillés : `border: 0.5px dashed #D4D3CF`, `background: #F6F5F1`
 - Label : `"Charge libre — augmenter si reps parfaites"`
 - Suggestion si disponible : `"Suggestion : 40 / 50 / 60 kg"`
@@ -193,27 +217,32 @@ HIGH HANG POWER SNATCH · 2 REPS        ← mvt-group-title
 ## 6. Bloc Conditioning
 
 ### Sélecteur de catégorie
+
 - **Pills** (pas dropdown) : Elite / RX / Inter / Scaled
 - Pill active : `background: couleur du bloc`, `color: white`
 - Pill inactive : `background: #F0EFEB`, `color: #555`
 - Par défaut : catégorie du profil de l'athlète
 
 ### Format EMOM
+
 ```
 Min. 1      10 Push Press          50 kg
 Min. 2–3    8 Pull-ups             —
 Min. 4      15 Box Jumps           60 cm
 ```
+
 - Structure : `Min. X` à gauche | nom + reps au centre | charge à droite
 - Format ligne : `[N] [Mouvement]` à gauche, charge à droite
 - `—` si pas de charge
 
 ### Format AMRAP / For time
+
 ```
 Set 1 · AMRAP 1:00    Max Power Snatch    85% du 3RM
 ```
 
 ### Informations affichées
+
 - Durée totale + format (ex : `10 min · Every minute on the minute`)
 - Nombre de rounds si AMRAP : `X rounds`
 
@@ -233,6 +262,7 @@ Set 1 · AMRAP 1:00    Max Power Snatch    85% du 3RM
 │  [ Retour aux séances ] │
 └─────────────────────────┘
 ```
+
 - Icône trophée dans cercle noir `64×64px`
 - Titre : `22px`, `font-weight: 700`
 - Sous-titre : `14px`, `color: #888`
@@ -263,13 +293,15 @@ components/
 ```
 
 ### Props LiveClient
+
 ```typescript
 type LiveClientProps = {
-  session: Session  // objet complet avec tous les blocs et détails
-}
+  session: Session; // objet complet avec tous les blocs et détails
+};
 ```
 
 ### Ordre de développement
+
 1. `page.tsx` — fetch complet
 2. `LiveClient.tsx` — navigation de base (dots + boutons + quitter)
 3. `LiveBlocWarmup.tsx` — le plus simple
@@ -282,14 +314,14 @@ type LiveClientProps = {
 
 ## 9. Cas particuliers validés
 
-| Situation | Traitement |
-|-----------|-----------|
-| Sets avec même fourchette | Card pleine largeur |
-| Instruction après chaque set | `set-note` en italique dans la card |
-| Notes longues coach | Bouton "Voir les notes" → popover |
-| Sous-parties a/b/c | Tags gris avec timing |
-| Options A/B (limitant) | Tags colorés orange/violet |
-| Montée libre sans sets | Free card en pointillés |
-| AMRAP basé sur 3RM | `"X% du 3RM"` à droite |
-| Pas de PR renseigné | Message + invitation à saisir |
-| Complexe (complex_id) | Mouvements regroupés + tag "Complexe" |
+| Situation                    | Traitement                            |
+| ---------------------------- | ------------------------------------- |
+| Sets avec même fourchette    | Card pleine largeur                   |
+| Instruction après chaque set | `set-note` en italique dans la card   |
+| Notes longues coach          | Bouton "Voir les notes" → popover     |
+| Sous-parties a/b/c           | Tags gris avec timing                 |
+| Options A/B (limitant)       | Tags colorés orange/violet            |
+| Montée libre sans sets       | Free card en pointillés               |
+| AMRAP basé sur 3RM           | `"X% du 3RM"` à droite                |
+| Pas de PR renseigné          | Message + invitation à saisir         |
+| Complexe (complex_id)        | Mouvements regroupés + tag "Complexe" |
