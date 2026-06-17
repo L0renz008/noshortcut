@@ -1,12 +1,19 @@
 import { Session } from "@/types";
 import Link from "next/link";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "./ui/card";
+import { Badge } from "./ui/badge";
+import { capitalizeFirstLetter } from "@/utilityFunctions/utilityFunctions";
 
 type SessionCardProps = {
   session: Session | undefined;
-};
-
-const capitalizeFirstLetter = (str: string) => {
-  return str.charAt(0).toUpperCase() + str.slice(1);
 };
 
 export default function SessionCard({ session }: SessionCardProps) {
@@ -29,24 +36,33 @@ export default function SessionCard({ session }: SessionCardProps) {
   );
 
   return (
-    <Link
-      href={`/sessions/${session.id}`}
-      className="bg-foreground rounded-2xl p-6 flex flex-col gap-4"
-    >
-      <p className="text-sm text-neutral-400">
-        {jour} {mois} {annee} · SEMAINE {session.week_number}
-      </p>
-      <h2 className="text-2xl font-bold text-background">Séance du jour</h2>
-      <div className="flex flex-row flex-wrap gap-2">
-        {Array.from(blocTypes).map((type) => (
-          <span
-            key={type}
-            className="rounded-full border border-neutral-600 px-3 py-1 text-sm text-neutral-300"
-          >
-            {type}
-          </span>
-        ))}
-      </div>
-    </Link>
+    <div className="flex flex-col gap-2">
+      <Link href={`/sessions/${session.id}`}>
+        <Card className="[--card-spacing:--spacing(4)] bg-foreground px-3 py-4">
+          <CardHeader>
+            {/* <CardTitle>Card Title</CardTitle> */}
+            <CardDescription>
+              {jour} {mois} {annee} · SEMAINE {session.week_number}
+            </CardDescription>
+            {/* <CardAction>Card Action</CardAction> */}
+          </CardHeader>
+          <CardContent>
+            <h2 className="text-2xl font-bold text-background">
+              Séance du jour
+            </h2>
+          </CardContent>
+          <CardFooter className="gap-2">
+            {Array.from(blocTypes).map((type) => (
+              <Badge
+                className="px-3 py-1 border border-neutral-600 text-neutral-300"
+                key={type}
+              >
+                {type}
+              </Badge>
+            ))}
+          </CardFooter>
+        </Card>
+      </Link>
+    </div>
   );
 }

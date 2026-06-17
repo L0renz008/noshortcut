@@ -1,5 +1,10 @@
 import { Bloc } from "@/types";
 import { IconChevronRight } from "@tabler/icons-react";
+import { Badge } from "./ui/badge";
+import {
+  capitalizeFirstLetter,
+  capitalizeWords,
+} from "@/utilityFunctions/utilityFunctions";
 
 type BlocCardProps = {
   bloc: Bloc;
@@ -12,16 +17,6 @@ const BLOC_TYPE_COLORS: Record<string, string> = {
   conditioning: "#D85A30",
   gym: "#D85A30",
   accessory: "#1D9E75",
-};
-
-const capitalizeFirstLetter = (str: string) => {
-  return str.charAt(0).toUpperCase() + str.slice(1);
-};
-const capitalizeWords = (str: string) => {
-  return str
-    .split(" ")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(" ");
 };
 
 export default function BlocCard({ bloc }: BlocCardProps) {
@@ -37,14 +32,10 @@ export default function BlocCard({ bloc }: BlocCardProps) {
         </span>
         <div className="flex items-center gap-1">
           {bloc.format ? (
-            <span className="rounded-full bg-black/18 px-3 py-1 text-xs uppercase leading-none">
-              {bloc.format}
-            </span>
+            <Badge className="bg-black/18 uppercase">{bloc.format}</Badge>
           ) : null}
           {bloc.is_optional ? (
-            <span className="rounded-full bg-black/18 px-3 py-1 text-xs uppercase leading-none">
-              {"Optionnel"}
-            </span>
+            <Badge className="bg-black/18 uppercase">{"Optionnel"}</Badge>
           ) : null}
         </div>
       </div>
