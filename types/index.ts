@@ -29,6 +29,7 @@ export type BlocStrength = {
   option_number: number | null;
   complex_id: number | null;
   movement: Movement | null;
+  rest_seconds: number | null;
 };
 
 export type BlocMetconMovement = {
@@ -58,6 +59,7 @@ export type Bloc = {
   format: "For time" | "AMRAP" | "EMOM" | null;
   order_index: number;
   is_optional: boolean | null;
+  interval_seconds: number | null;
   bloc_warmup: BlocWarmup[] | null;
   bloc_strength: BlocStrength[] | null;
   bloc_metcon: BlocMetcon[] | null;
