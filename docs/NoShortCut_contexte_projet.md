@@ -17,6 +17,7 @@ Deux modes prévus : **athlète** (consultation séances + records) / **coach** 
 - **Déploiement** : Vercel
 - **Icônes** : @tabler/icons-react (outline uniquement, jamais -filled)
 - **Police** : Geist (next/font)
+- **Animation** : framer-motion (installé, utilisé dans LiveClient)
 
 ---
 
@@ -27,12 +28,15 @@ Deux modes prévus : **athlète** (consultation séances + records) / **coach** 
 - Constantes statiques déclarées **hors** des fonctions composants
 - `"use client"` uniquement si hooks ou interactivité
 - PascalCase pour composants et fichiers, camelCase pour variables
-- Les objets `Date` ne survivent pas à la sérialisation Server→Client JSON → toujours passer des `string` (ex: `todayStr: string`)
-- BDD : tout en minuscules, le formatage (majuscules, etc.) se gère côté frontend
+- Les objets `Date` ne survivent pas à la sérialisation Server→Client JSON → toujours passer des `string`
+- Fonctions utilitaires dans `utilityFunctions/utilityFunctions.ts`
+- Navigation programmatique via `useRouter().push()`, pas de `<Link>` dans les handlers
+- `useRef` pour les valeurs qui n'impactent pas le rendu (ex: touchStartX, direction)
+- `useTransition` pour les navigations avec feedback de chargement
 
 ---
 
-## Schéma BDD Supabase (état actuel — revu en profondeur)
+## Schéma BDD Supabase (état actuel)
 
 ```sql
 users(
@@ -47,80 +51,77 @@ users(
 
 sessions(
   id UUID PRIMARY KEY,
-  date DATE,
-  week_number INT,   -- semaine du CYCLE coach, saisie manuelle
-  created_at TIMESTAMPTZ DEFAULT now()
-)
-
-movements(
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name TEXT NOT NULL UNIQUE,
-  demo_url TEXT,
-  category TEXT,               -- 'weightlifting','powerlifting','mobility','accessory','other' (pas de CHECK, valeurs libres)
-  has_record BOOLEAN DEFAULT false,
-  base_movement_id UUID REFERENCES movements(id),  -- auto-référentiel, pour hiérarchie snatch → power snatch → high hang power snatch
+  date DATE NOT NULL,
+  week_number INT NOT NULL,
   created_at TIMESTAMPTZ DEFAULT now()
 )
 
 blocs(
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id UUID PRIMARY KEY,
   session_id UUID REFERENCES sessions(id),
-  title TEXT,
-  type TEXT,                   -- 'warm up','haltero','force','conditioning','gym','accessory'
-  format TEXT,                 -- 'For time','AMRAP','EMOM','Tabata' — nullable, pour conditioning
-  order_index INT,
+  title TEXT NOT NULL,
+  type TEXT CHECK (type IN ('warm up','haltero','force','conditioning','gym','accessory')),
+  format TEXT CHECK (format IN ('For time','AMRAP','EMOM')),  -- nullable
+  order_index INT NOT NULL,
   is_optional BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT now()
 )
--- Note : colonne instructions supprimée — remplacée par les tables spécialisées
+
+movements(
+  id UUID PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE,
+  demo_url TEXT,
+  category TEXT,
+  has_record BOOLEAN DEFAULT false,
+  base_movement_id UUID REFERENCES movements(id),  -- auto-référence pour variations
+  created_at TIMESTAMPTZ DEFAULT now()
+)
 
 bloc_warmup(
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  bloc_id UUID NOT NULL REFERENCES blocs(id) ON DELETE CASCADE,
-  movement_id UUID REFERENCES movements(id),  -- nullable (notes libres sans mouvement)
-  reps INT,
-  unit TEXT,                   -- 'sec','m','cal' — null implicitement = reps
+  id UUID PRIMARY KEY,
+  bloc_id UUID REFERENCES blocs(id) ON DELETE CASCADE,
+  movement_id UUID REFERENCES movements(id),
+  reps DOUBLE PRECISION,
+  unit TEXT,
   order_index INT NOT NULL,
   notes TEXT,
-  complex_id INT,              -- même valeur = mouvements enchaînés dans un complexe
+  complex_id INT,
   created_at TIMESTAMPTZ DEFAULT now()
 )
 
 bloc_strength(
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  bloc_id UUID NOT NULL REFERENCES blocs(id) ON DELETE CASCADE,
+  id UUID PRIMARY KEY,
+  bloc_id UUID REFERENCES blocs(id) ON DELETE CASCADE,
   movement_id UUID REFERENCES movements(id),
   set_number_start INT,
   set_number_end INT,
   reps INT,
-  percentage_min FLOAT,        -- stocké en décimal : 0.65 = 65%
-  percentage_max FLOAT,        -- nullable si un seul pourcentage
-  rest_pattern TEXT,           -- 'Every 2:00', 'Every 3:00', 'rest as needed'
+  percentage_min DOUBLE PRECISION,
+  percentage_max DOUBLE PRECISION,
+  rest_pattern TEXT,
   notes TEXT,
-  option_number INT,           -- nullable ; 1 ou 2 si sets avec options de programmation
-  complex_id INT,              -- même valeur = mouvements en complexe (ex: 2 clean + 1 jerk)
+  option_number INT,   -- null = pas d'option, 1 = option A, 2 = option B
+  complex_id INT,
   created_at TIMESTAMPTZ DEFAULT now()
 )
--- Remplace bloc_charges. Pas de user_id ni charge_kg : charge calculée dynamiquement
--- côté TypeScript depuis records de l'athlète connecté × percentage
 
 bloc_metcon(
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  bloc_id UUID NOT NULL REFERENCES blocs(id) ON DELETE CASCADE,
-  duration_minutes INT,        -- nullable (calculé si connu : nb_rounds × rest_pattern)
-  nb_rounds INT,               -- nullable pour AMRAP
-  notes TEXT,                  -- coaching notes, design/intention
+  id UUID PRIMARY KEY,
+  bloc_id UUID REFERENCES blocs(id) ON DELETE CASCADE,
+  duration_minutes INT,
+  nb_rounds INT,
+  notes TEXT,
   created_at TIMESTAMPTZ DEFAULT now()
 )
 
 bloc_metcon_movements(
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  metcon_id UUID NOT NULL REFERENCES bloc_metcon(id) ON DELETE CASCADE,
-  category TEXT CHECK (category IN ('Elite','RX','Inter','Scaled')),  -- nullable si tout le monde fait pareil
+  id UUID PRIMARY KEY,
+  metcon_id UUID REFERENCES bloc_metcon(id) ON DELETE CASCADE,
   movement_id UUID REFERENCES movements(id),
-  reps FLOAT,
-  unit TEXT,                   -- null = reps, sinon 'cal','m','sec'
-  load_kg FLOAT,               -- nullable
+  category TEXT CHECK (category IN ('Elite','RX','Inter','Scaled')),
+  reps DOUBLE PRECISION,
+  unit TEXT,
+  load_kg DOUBLE PRECISION,
   order_index INT NOT NULL,
   notes TEXT,
   complex_id INT,
@@ -137,66 +138,104 @@ records(
 )
 ```
 
-### Logique d'affichage par type de bloc
+**Permissions** : GRANT SELECT + policies `USING(true)` sur toutes les tables. À restreindre après auth.
 
-- **Warm up / Accessory** → `bloc_warmup`
-- **Haltéro / Force** → `bloc_strength` (charges calculées : `records.weight_kg × percentage`)
-- **Conditioning** → `bloc_metcon` + `bloc_metcon_movements` (filtre par `category` pour le dropdown)
-- **complex_id** → côté TypeScript, grouper les lignes avec même `complex_id` et joindre avec `" + "`
+**Données de test** :
 
-### Cascade DELETE
-
-Supprimer un `bloc` supprime automatiquement toutes ses lignes dans `bloc_warmup`, `bloc_strength`, `bloc_metcon` (et par cascade `bloc_metcon_movements`).
-
-### Permissions actuelles (temporaires)
-
-GRANT SELECT + policy `USING(true)` sur `users`, `sessions`, `blocs`. À restreindre après auth.
+- Sessions semaines 3 et 4 (mai–juin 2026)
+- Session du 17 juin 2026 peuplée avec 5 blocs complets : warm up snatch, haltero strength-speed, force absolute strength, accessory strength endurance, accessory strength accessory (optional)
 
 ---
 
-## Données de test
-
-- 6 users historiques
-- Sessions semaine 3 : 26-29 mai 2026 (`week_number: 3`)
-- Sessions semaine 4 : 1, 2, 4 et 5 juin 2026 (`week_number: 4`)
-- **Session du 1er juin 2026 entièrement peuplée** dans le nouveau schéma :
-  - `warm up snatch` → bloc_warmup (mobilité + complexe snatch)
-  - `strength - speed` → bloc_strength (Power Snatch, 12 sets every 2:00, avec option_number 1/2 pour sets 10-12)
-  - `absolute strength` → bloc_strength (Back Squat, 6 sets every 3:00)
-  - `strength endurance` → bloc_metcon (EMOM 15 min / 10 rounds, DB rows + bench press)
-  - `strength accessory` → bloc_warmup (is_optional: true, GHD + side bents + medball slams)
-- Table `movements` peuplée avec ~25 mouvements dont hiérarchie complète snatch (snatch → power snatch → high hang power snatch, etc.)
-
----
-
-## Types TypeScript (`types/index.ts`) — À METTRE À JOUR
-
-Le fichier actuel est **obsolète** — il référence `instructions` et `BlocVersion` qui n'existent plus. À réécrire lors de la prochaine session de code.
+## Types TypeScript (`types/index.ts`)
 
 ```typescript
--- ANCIEN (obsolète)
-export type BlocVersion = { ... }  // table supprimée
-export type Bloc = {
-  instructions: string | null;     // colonne supprimée
-  versions: BlocVersion[];         // table supprimée
-}
+export type Movement = {
+  id: string;
+  name: string;
+  demo_url: string | null;
+  category: string | null;
+  has_record: boolean | null;
+  base_movement_id: string | null;
+};
 
--- À réécrire avec : BlocWarmup, BlocStrength, BlocMetcon, BlocMetconMovement
+export type BlocWarmup = {
+  id: string;
+  reps: number | null;
+  unit: string | null;
+  order_index: number;
+  notes: string | null;
+  complex_id: number | null;
+  movement: Movement | null;
+};
+
+export type BlocStrength = {
+  id: string;
+  set_number_start: number | null;
+  set_number_end: number | null;
+  reps: number | null;
+  percentage_min: number | null;
+  percentage_max: number | null;
+  rest_pattern: string | null;
+  notes: string | null;
+  option_number: number | null;
+  complex_id: number | null;
+  movement: Movement | null;
+};
+
+export type BlocMetconMovement = {
+  id: string;
+  category: "Elite" | "RX" | "Inter" | "Scaled" | null;
+  movement: Movement | null;
+  reps: number | null;
+  unit: string | null;
+  load_kg: number | null;
+  order_index: number;
+  notes: string | null;
+  complex_id: number | null;
+};
+
+export type BlocMetcon = {
+  id: string;
+  duration_minutes: number | null;
+  nb_rounds: number | null;
+  notes: string | null;
+  bloc_metcon_movements: BlocMetconMovement[] | null;
+};
+
+export type Bloc = {
+  id: string;
+  title: string;
+  type: "warm up" | "haltero" | "force" | "conditioning" | "gym" | "accessory";
+  format: "For time" | "AMRAP" | "EMOM" | null;
+  order_index: number;
+  is_optional: boolean | null;
+  bloc_warmup: BlocWarmup[] | null;
+  bloc_strength: BlocStrength[] | null;
+  bloc_metcon: BlocMetcon[] | null;
+};
+
+export type Session = {
+  id: string;
+  date: string;
+  week_number: number;
+  blocs: Bloc[];
+};
 ```
 
 ---
 
 ## Architecture de l'app
 
-### Routing prévu
+### Routing
 
 ```
-/                       → home (semaine + séance du jour)
-/sessions/[id]          → aperçu séance + blocs (page en cours de design)
-/sessions/[id]/live     → mode séance en cours, bloc par bloc
-/athletes               → liste athlètes (coach only)
-/athletes/[id]          → profil + records d'un athlète
-/records                → records de l'athlète connecté
+/                          → home (semaine + séance du jour)
+/sessions/[id]             → aperçu séance + blocs ✅ FAIT
+/sessions/[id]/live        → mode séance en cours, bloc par bloc 🚧 EN COURS
+/athletes                  → liste athlètes (coach only)
+/athletes/[id]             → profil + records d'un athlète
+/records                   → records de l'athlète connecté
 ```
 
 ### Pattern Server / Client systématique
@@ -204,11 +243,11 @@ export type Bloc = {
 ```
 page.tsx (Server Component)
   → fetch Supabase
-  → passe données + todayStr (string) à HomeClient
+  → passe données sérialisées (strings, pas Date) au Client Component
 
-HomeClient.tsx (Client Component)
+XxxClient.tsx (Client Component)
   → useState pour l'état local
-  → passe données + callbacks aux composants enfants
+  → hooks (useRouter, useTransition, useRef...)
 ```
 
 ---
@@ -221,114 +260,170 @@ Geist, `max-w-md mx-auto`, `pb-20`, BottomNav inclus.
 
 ### `components/BottomNav.tsx`
 
-`"use client"`, usePathname, tabs : [Séances /, Records /records, Profil /profil], Link.
+Tabs : [Séances /, Records /records, Profil /profil]. Actif = `pathname === href`.
 
 ### `components/Header.tsx`
 
-Pas de "use client". Mois formaté FR. User mocké `{name:'Lorenzo'}`. Avatar + IconBell.
+Mois en français majuscule. User mocké `{name:'Lorenzo'}`. Avatar rond initiale + IconBell.
 
 ### `components/WeekStrip.tsx`
 
-Props : `today: Date`, `sessionDates: string[]`, `selectedDate: string`, `onDaySelect: (date:string)=>void`.
-Calcul lundi, 7 jours, point sous les jours avec session, `<hr>` intégré.
+Semaine courante, 7 jours, point sous les jours avec session, `<hr>` intégré.
 
 ### `components/SessionCard.tsx`
 
-Props : `session: Session | undefined`. Si undefined → message vide. Sinon → card noire, pills types blocs, Link vers `/sessions/${session.id}`.
+Card noire, date formatée, pills types blocs dédupliqués via `Set` + `Array.from()`.
+`key={type}` sur les pills (plus sémantique que `key={index}`).
 
 ### `components/HomeClient.tsx`
 
-`"use client"`, useState(todayStr) → selectedDate. Rend Header + WeekStrip + SessionCard.
+`useState(todayStr)` → selectedDate. Pattern Server/Client standard.
 
-### `app/page.tsx`
+### `components/BlocCard.tsx`
 
-Server Component. Fetch sessions + blocs de la semaine. Passe à HomeClient.
+Card blanche avec bandeau coloré par type, titre, chevron, badges format/optionnel.
+`BLOC_TYPE_COLORS` déclaré hors composant. `capitalizeFirstLetter` pour le type.
+
+### `components/DotPagination.tsx`
+
+`Array.from({ length: total }, (_, i) => i).map(...)`.
+Trois états : done (gris foncé), active (pill allongée noire), à venir (gris clair).
+`transition-all duration-300` sur tous les dots.
+
+### `components/LiveClient.tsx`
+
+Client Component principal pour `/sessions/[id]/live`.
+
+- `useState(0)` → currentIndex
+- `useRef` → touchStartX, direction
+- `useTransition` → isPending pour navigation quitter
+- `useRouter` → navigation programmatique
+- Swipe tactile : `onTouchStart` / `onTouchEnd`, seuil 50px
+- `AlertDialog` Shadcn pour confirmation quitter
+- `Spinner` Shadcn pendant isPending
+- `framer-motion` installé mais animation carrousel abandonnée (trop de contraintes)
+- Switch sur `bloc.type` prévu pour router vers les bons composants de blocs
 
 ### `app/sessions/[id]/page.tsx`
 
-**État actuel : partiellement cassé** — la query sélectionne `instructions` qui n'existe plus.
+Query légère (sans détails des blocs). Tri par `order_index`. Utilise `BlocCard`.
 
-- Structure page OK : retour /, date formatée FR, "Semaine X · N blocs"
-- Cartes colorées par type via `BLOC_TYPE_COLORS` (constante hors composant)
-- Query à mettre à jour : retirer `instructions`, ajouter les tables spécialisées
-- Bouton "Commencer la séance" → `/sessions/[id]/live` (pas encore codé)
+### `app/sessions/[id]/live/page.tsx`
+
+Query complète avec jointures imbriquées et alias `movement:movements(...)`.
+
+---
+
+## Queries Supabase
+
+### Page aperçu `/sessions/[id]`
+
+```typescript
+.select(`id, date, week_number,
+  blocs (id, title, type, order_index, format, is_optional)`)
+.eq("id", id).single()
+```
+
+### Page live `/sessions/[id]/live`
+
+```typescript
+.select(`id, date, week_number,
+  blocs (id, title, type, order_index, format, is_optional,
+    bloc_warmup(bloc_id, reps, unit, order_index, notes, complex_id,
+      movement:movements(id, name, demo_url, category, has_record)),
+    bloc_strength(id, set_number_start, set_number_end, reps,
+      percentage_min, percentage_max, rest_pattern, notes,
+      option_number, complex_id,
+      movement:movements(id, name, demo_url, category, has_record)),
+    bloc_metcon(id, duration_minutes, nb_rounds, notes,
+      bloc_metcon_movements(id, category, reps, unit, load_kg,
+        order_index, notes, complex_id,
+        movement:movements(id, name, demo_url, category, has_record))))`)
+.eq("id", id).single()
+```
+
+**Note** : alias `movement:movements(...)` pour que le nom retourné corresponde aux types TS.
 
 ---
 
 ## Design system — Couleurs par type de bloc
 
-| Type         | Couleur   | Usage       |
-| ------------ | --------- | ----------- |
-| warm up      | `#EF9F27` | Header band |
-| haltero      | `#378ADD` | Header band |
-| force        | `#7F77DD` | Header band |
-| conditioning | `#D85A30` | Header band |
-| gym          | `#D85A30` | Header band |
-| accessory    | `#1D9E75` | Header band |
+| Type         | Couleur | Hex       |
+| ------------ | ------- | --------- |
+| warm up      | Amber   | `#EF9F27` |
+| haltero      | Blue    | `#378ADD` |
+| force        | Purple  | `#7F77DD` |
+| conditioning | Coral   | `#D85A30` |
+| gym          | Coral   | `#D85A30` |
+| accessory    | Teal    | `#1D9E75` |
 
 Badge semi-transparent sur header coloré : `background: rgba(0,0,0,0.18)`
 
 ---
 
-## Design décidé — Page `/sessions/[id]` (aperçu)
+## Décisions techniques figées
 
-Chaque carte de bloc :
-
-- Header coloré (couleur selon type) + badge optionnel (format ou "Optionnel")
-- Corps blanc : titre + résumé gris + chevron →
-- Border radius 11px, border 0.5px solid #E8E8E4
-
-Résumés à calculer côté TypeScript :
-
-- **warm up** : `"${bloc_warmup.length} mouvements"`
-- **haltero/force** : `"${nb_sets} sets · ${rest_pattern}"` (nb_sets = nb lignes bloc_strength)
-- **conditioning** : `"${duration_minutes} min · ${nb_mouvements} mouvements"`
-- **accessory** : `"${bloc_warmup.length} exercices"`
-
-Bouton noir "Commencer la séance →" en bas de page.
+1. `week_number` = semaine cycle coach, saisie manuelle
+2. `bloc_strength` utilisé pour Force **et** Haltéro (même structure)
+3. `option_number` dans `bloc_strength` : null = pas d'option, 1 = option A, 2 = option B
+4. `complex_id` dans les tables de détail : même valeur = mouvements à enchaîner
+5. Alias Supabase `movement:movements(...)` pour les jointures vers la table `movements`
+6. `as Session` assertion de type acceptée comme tradeoff pragmatique
+7. Modifications de pourcentages en live → `localStorage` uniquement, pas en BDD
+8. Swipe mobile : seuil 50px, `useRef` pour touchStartX et direction
+9. Navigation quitter : `AlertDialog` + `useTransition` + `router.push()`
+10. Animation carrousel framer-motion : **abandonnée** pour l'instant (trop de contraintes layout)
+11. `allowedDevOrigins` dans `next.config.ts` pour tests mobile sur réseau local
 
 ---
 
-## Vision — Mode live `/sessions/[id]/live`
+## Tâches — Ordre de priorité
 
-- Barre de progression (2/5 etc.)
-- Un bloc à la fois, bouton "Bloc suivant"
-- **Haltéro/Force** : tableau sets avec charges calculées (`records × percentage`)
-- **Conditioning** : dropdown catégorie si plusieurs versions (category dans bloc_metcon_movements)
-- **Ajustement pourcentages** : local uniquement via localStorage, ne modifie pas la BDD
-- **Progression** : mémorisée en localStorage
-
----
-
-## Prochaines tâches (ordre de priorité)
-
-1. **Mettre à jour `types/index.ts`** — nouveaux types pour le schéma revu
-2. **Mettre à jour la query dans `app/sessions/[id]/page.tsx`** — retirer instructions, ajouter tables spécialisées
-3. **Finir le design de la page `/sessions/[id]`** — résumés calculés, bouton commencer
-4. **Coder `/sessions/[id]/live`** — mode séance bloc par bloc
-5. **Peupler d'autres séances de test** (semaine 3 et autres jours semaine 4)
-6. **Supabase Auth** — connexion athlètes + coach
-7. **RLS policies** par utilisateur
-8. **Page `/records`**
-9. **Mode coach** — dashboard + création séance (inclut UI pour option_number)
-10. **Déploiement Vercel**
+1. **`LiveBlocWarmup.tsx`** — affichage warm up avec complexes
+2. **`LiveBlocForce.tsx`** — grille sets, fourchettes, modification %
+3. **`LiveBlocHaltero.tsx`** — groupes mvt, complexes, options A/B
+4. **`LiveBlocCondi.tsx`** — pills catégorie, EMOM/AMRAP
+5. **`LiveBlocAccessory.tsx`** — similaire force, simplifié
+6. **Écran de fin** dans LiveClient
+7. **localStorage** — progression + pourcentages modifiés
+8. **Supabase Auth** — connexion athlètes + coach
+9. **Policies RLS** par utilisateur
+10. **Page `/records`**
+11. **Mode coach** — dashboard + création séance
+12. **Déploiement Vercel**
 
 ---
 
-## Concepts maîtrisés (à jour)
+## Profil apprenant
 
-Props, déstructuration, `export default`, `"use client"`, Server vs Client Components, sérialisation JSON Server→Client, `useState`, `useEffect`, `usePathname`, `useRouter`, `.map()/.find()/.includes()`, ternaire, `??`, types TS, routes dynamiques `[id]`, `params`, passage de fonctions en props, `Link` vs `router.push`, styles inline couleurs dynamiques, jointures Supabase imbriquées, GRANT + RLS, **normalisation BDD**, **tables de référence**, **intégrité référentielle + CASCADE**, **ALTER TABLE**, **subqueries imbriquées**, **UPDATE en masse**, **relation auto-référentielle**, **JSON vs relationnel**, **séparation des responsabilités**.
+Niveau : débutant/intermédiaire — Mac Apple Silicon, VS Code, Git + terminal.
 
-## Pas encore enseigné
+### Concepts maîtrisés
 
-`useParams`, `useSearchParams`, Supabase Auth, RLS avancée, gestion formulaires, optimistic updates, `localStorage`, `useContext`, déploiement Vercel.
+Props, déstructuration, `export default`, `"use client"`, Server vs Client Components,
+sérialisation JSON Server→Client, `useState`, `useEffect`, `useRef`, `useTransition`,
+`usePathname`, `useRouter`, `router.push()`, `.map()/.find()/.includes()`, ternaire,
+`??`, types TS (type, cast `as`, union types, `Record<string,string>`),
+`Array.from()`, `Set` pour déduplication, algorithme calcul lundi semaine,
+manipulation Date JS, jointures + filtres Supabase, alias Supabase,
+GRANT + RLS policies, routes dynamiques `[id]`, `params` async,
+passage de fonctions en props, `Link` vs `router.push`,
+framer-motion (AnimatePresence, motion.div, initial/animate/exit),
+touch events (onTouchStart, onTouchEnd), AlertDialog Shadcn, Spinner Shadcn.
 
-## Instructions pédagogiques
+### Pas encore enseigné
+
+`useParams`, `useSearchParams`, Supabase Auth, RLS avancée,
+gestion formulaires, optimistic updates, `localStorage`, `useContext`,
+déploiement Vercel, `useCallback`, `useMemo`.
+
+### Instructions pédagogiques
 
 - Toujours expliquer **avant** de coder
-- Faire coder Lorenzo lui-même — indications, pas code complet
-- Valider avant de corriger
-- Question de réflexion avant chaque nouveau concept
-- Il anticipe bien, pose de bonnes questions, a une vraie vision produit
-- Attention : garde parfois du code de test — vérifier propreté
-- Aime : le "pourquoi", les schémas textuels, les mockups, voir le résultat visuel
+- Le faire coder lui-même — donner des indications, pas le code complet
+- Valider ce qui est bien avant de corriger
+- Poser une question de réflexion avant chaque nouveau concept
+- Corriger avec précision quand il partage son code
+- Il anticipe bien les problèmes, pose de bonnes questions
+- Aime : le "pourquoi", les schémas textuels, voir le résultat visuel, les mockups
+- Garde parfois du code de test — vérifier propreté du code
