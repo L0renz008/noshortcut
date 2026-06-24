@@ -13,7 +13,7 @@ export default async function Live({
     .select(
       `id, date, week_number,
       blocs (id,session_id,title,type,order_index,format,is_optional, interval_seconds,
-      bloc_warmup(bloc_id, reps, unit,order_index,notes,complex_id, movement:movements(id,name,demo_url,category,has_record ) ),
+      bloc_warmup(id, bloc_id, reps, unit,order_index,notes,complex_id, movement:movements(id,name,demo_url,category,has_record ) ),
       bloc_strength(id,set_number_start,set_number_end,reps,percentage_min,percentage_max,rest_pattern,rest_seconds,notes,option_number,complex_id,movement:movements(id,name,demo_url,category,has_record)),
       bloc_metcon(id,duration_minutes,nb_rounds,notes,bloc_metcon_movements(id,category,reps,unit,load_kg,order_index,notes,complex_id,movement:movements(id,name,demo_url,category,has_record))))`,
     )

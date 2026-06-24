@@ -25,11 +25,11 @@ export type BlocStrength = {
   percentage_min: number | null;
   percentage_max: number | null;
   rest_pattern: string | null;
+  rest_seconds: number | null;
   notes: string | null;
   option_number: number | null;
   complex_id: number | null;
   movement: Movement | null;
-  rest_seconds: number | null;
 };
 
 export type BlocMetconMovement = {

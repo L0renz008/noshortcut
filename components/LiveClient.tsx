@@ -22,6 +22,7 @@ import {
   AlertDialogTrigger,
 } from "./ui/alert-dialog";
 import { Spinner } from "./ui/spinner";
+import LiveBlocWarmup from "./LiveBlocWarmup";
 
 type LiveClientProps = {
   session: Session | null;
@@ -130,6 +131,9 @@ export default function LiveClient({ session }: LiveClientProps) {
             ) : null}
           </div>
         </CardHeader>
+        <CardContent>
+          <LiveBlocWarmup bloc={currentBloc} />
+        </CardContent>
       </Card>
       <div className="py-4 flex gap-2">
         <Button

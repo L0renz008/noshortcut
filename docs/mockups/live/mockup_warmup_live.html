@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<title>Mockup — Bloc Warm Up live</title>
+<style>
+  :root {
+    --bg-outer: #efeeea;
+    --bg-app: #F6F5F1;
+    --card-border: #E2E1DD;
+    --text-dark: #171717;
+    --text-muted: #999999;
+    --text-soft: #888888;
+    --pill-bg: #F0EFEB;
+    --pill-text: #555555;
+    --warmup-color: #EF9F27;
+    --divider-soft: #F0EFEB;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg-outer);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    display: flex;
+    justify-content: center;
+    padding: 40px 16px;
+  }
+  .phone {
+    width: 390px;
+    background: var(--bg-app);
+    border-radius: 32px;
+    border: 1px solid #e3e1da;
+    padding: 22px 16px 24px;
+  }
+  .dots {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 18px;
+  }
+  .dot { width: 7px; height: 7px; border-radius: 99px; background: #D4D3CF; }
+  .dot.done { background: #999; }
+  .dot.active { width: 16px; background: #111; }
+
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid var(--card-border);
+    overflow: hidden;
+  }
+  .card-header {
+    background: var(--warmup-color);
+    color: #fff;
+    font-weight: 700;
+    font-size: 15px;
+    padding: 14px 18px;
+  }
+  .card-body { padding: 16px 18px 18px; }
+  h1.title {
+    margin: 0 0 4px;
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--text-dark);
+  }
+  p.subtitle {
+    margin: 0 0 18px;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .section-label {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #b8b6ae;
+    margin: 0 0 8px;
+  }
+
+  .movement-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--pill-bg);
+    border-radius: 11px;
+    margin-bottom: 6px;
+  }
+  .movement-row .label { min-width: 0; }
+  .movement-name {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text-dark);
+    text-transform: capitalize;
+  }
+  .movement-note {
+    font-size: 10.5px;
+    color: var(--text-soft);
+    font-style: italic;
+    margin-top: 1px;
+  }
+  .movement-value {
+    flex-shrink: 0;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--text-dark);
+    background: #fff;
+    border: 1px solid var(--card-border);
+    border-radius: 99px;
+    padding: 3px 10px;
+    white-space: nowrap;
+  }
+
+  .complex-section { margin-top: 16px; }
+  .complex-card {
+    border: 1px solid var(--card-border);
+    border-radius: 13px;
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+  .complex-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 12px;
+    background: #FBF3E4;
+    border-bottom: 1px solid var(--card-border);
+  }
+  .complex-tag {
+    font-size: 9.5px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--warmup-color);
+    background: rgba(239,159,39,0.14);
+    border-radius: 99px;
+    padding: 3px 9px;
+    white-space: nowrap;
+  }
+  .complex-context {
+    font-size: 11px;
+    color: #8a7a55;
+    font-style: italic;
+  }
+  .complex-movement {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 14px;
+    border-bottom: 0.5px solid var(--divider-soft);
+  }
+  .complex-movement:last-child { border-bottom: none; }
+  .complex-movement-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-dark);
+    text-transform: capitalize;
+  }
+  .complex-movement-reps {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-dark);
+  }
+
+  .nav {
+    display: flex;
+    gap: 8px;
+    margin-top: 18px;
+  }
+  .btn {
+    height: 42px;
+    border-radius: 11px;
+    border: 0.5px solid var(--card-border);
+    background: #fff;
+    color: var(--text-dark);
+    font-weight: 700;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .btn.prev { flex: 1; }
+  .btn.next { flex: 2; }
+
+  .annot {
+    max-width: 390px;
+    margin: 14px auto 0;
+    font-size: 12px;
+    color: #8a8a86;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<div>
+  <div class="phone">
+    <div class="dots">
+      <div class="dot done"></div>
+      <div class="dot active"></div>
+      <div class="dot"></div>
+      <div class="dot"></div>
+      <div class="dot"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">Warm up</div>
+      <div class="card-body">
+        <h1 class="title">Warm Up Snatch</h1>
+        <p class="subtitle">6 mouvements · 3 complexes</p>
+
+        <p class="section-label">Mobilité &amp; activation</p>
+
+        <div class="movement-row">
+          <div class="label">
+            <div class="movement-name">Dynamic pec stretch</div>
+            <div class="movement-note">par côté</div>
+          </div>
+          <div class="movement-value">60 sec</div>
+        </div>
+        <div class="movement-row">
+          <div class="label">
+            <div class="movement-name">Dynamic lat stretch</div>
+            <div class="movement-note">par côté</div>
+          </div>
+          <div class="movement-value">60 sec</div>
+        </div>
+        <div class="movement-row">
+          <div class="label">
+            <div class="movement-name">Dynamic anterior hip stretch</div>
+            <div class="movement-note">par côté</div>
+          </div>
+          <div class="movement-value">60 sec</div>
+        </div>
+        <div class="movement-row">
+          <div class="label">
+            <div class="movement-name">Dynamic posterior hip stretch</div>
+            <div class="movement-note">par côté</div>
+          </div>
+          <div class="movement-value">60 sec</div>
+        </div>
+        <div class="movement-row">
+          <div class="label">
+            <div class="movement-name">Mini band hinge prep routine</div>
+            <div class="movement-note">20 alt. pas de côté, 20 goodmorning, 20 alt. pas de côté, 20 glute bridge</div>
+          </div>
+        </div>
+        <div class="movement-row">
+          <div class="label">
+            <div class="movement-name">Banded ATWYEI</div>
+            <div class="movement-note">10 de chaque</div>
+          </div>
+        </div>
+
+        <div class="complex-section">
+          <p class="section-label">Complexes — enchaîner sans poser</p>
+
+          <div class="complex-card">
+            <div class="complex-head">
+              <span class="complex-tag">Complexe 1</span>
+              <span class="complex-context">Depuis le high hang</span>
+            </div>
+            <div class="complex-movement">
+              <span class="complex-movement-name">Snatch pull</span>
+              <span class="complex-movement-reps">2 reps</span>
+            </div>
+            <div class="complex-movement">
+              <span class="complex-movement-name">Muscle snatch</span>
+              <span class="complex-movement-reps">2 reps</span>
+            </div>
+            <div class="complex-movement">
+              <span class="complex-movement-name">Power snatch</span>
+              <span class="complex-movement-reps">2 reps</span>
+            </div>
+          </div>
+
+          <div class="complex-card">
+            <div class="complex-head">
+              <span class="complex-tag">Complexe 2</span>
+              <span class="complex-context">Depuis le hang</span>
+            </div>
+            <div class="complex-movement">
+              <span class="complex-movement-name">Snatch pull</span>
+              <span class="complex-movement-reps">2 reps</span>
+            </div>
+            <div class="complex-movement">
+              <span class="complex-movement-name">Muscle snatch</span>
+              <span class="complex-movement-reps">2 reps</span>
+            </div>
+            <div class="complex-movement">
+              <span class="complex-movement-name">Power snatch</span>
+              <span class="complex-movement-reps">2 reps</span>
+            </div>
+          </div>
+
+          <div class="complex-card">
+            <div class="complex-head">
+              <span class="complex-tag">Complexe 3</span>
+              <span class="complex-context">Depuis mi-tibia</span>
+            </div>
+            <div class="complex-movement">
+              <span class="complex-movement-name">Snatch pull</span>
+              <span class="complex-movement-reps">2 reps</span>
+            </div>
+            <div class="complex-movement">
+              <span class="complex-movement-name">Muscle snatch</span>
+              <span class="complex-movement-reps">2 reps</span>
+            </div>
+            <div class="complex-movement">
+              <span class="complex-movement-name">Power snatch</span>
+              <span class="complex-movement-reps">2 reps</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav">
+      <div class="btn prev">‹ Préc.</div>
+      <div class="btn next">Suivant ›</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
